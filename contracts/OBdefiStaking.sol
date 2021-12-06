@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-//pragma solidity 0.8.9;
 pragma solidity 0.8.10;
  
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -28,13 +27,13 @@ contract OBdefiStaking {
     Token[] public tokens;
     mapping(address => uint) public tokenMap;
     
-    //GetLastPrice
+    //GetLastPrice - il est recommandé de faire le calcul de prix à l'extérieur car pas fiable dans le SC 
+    // vu dans la doc :) 
     GetLastPrice private priceLatest = new GetLastPrice();
-    //PriceConsumerV3 private priceConsumerV3 = new PriceConsumerV3();
-    
+
     /// @notice calculate staked amount per second
     /// @param token struct containing the necessary information
-    /// @return an uint
+    /// @return uint
     function getNewStakedAmountPerSecond (Token memory token) private view returns (uint){
         return token.previousStakedAmountPerSecond + ((block.timestamp - token.lastTransactionDate) * token.stakedAmount);
     }
@@ -77,6 +76,7 @@ contract OBdefiStaking {
         }
 
         // transfer amount from stakeholder to the contract
+        // attn : approuve du contrat avant : 
         // stakeholder will have first approved (minimum = amount) the contract to transfer tokens from its address
         IERC20(tokenAddress).transferFrom(msg.sender, address(this), amount);
     }
@@ -84,11 +84,11 @@ contract OBdefiStaking {
     /// @notice Withdraw an amount of a specific ERC20 token
     /// @param tokenAddress address of the staked token
     /// @param amount amount to be withdrawn
-    function withdrawToken (address tokenAddress, uint amount) public {
+    function unstakeToken (address tokenAddress, uint amount) public {
         require(amount > 0, "You cannot withdraw 0 token");
 
         int arrayIndex = int(tokenMap[tokenAddress]) - 1;
-        require(arrayIndex > -1, "Seems you never staked the given token on this contract");
+        require(arrayIndex > -1, "No staked token on this contract");
         
         Token storage currentToken = tokens[uint(arrayIndex)];
         require(currentToken.stakedAmount >= amount, "Not enough staked tokens.");
@@ -103,7 +103,7 @@ contract OBdefiStaking {
     
     /// @notice indicate the total staked amount of a given token 
     /// @param tokenAddress address of the staked token
-    /// @return an uint
+    /// @return uint
     function getTokenStakedAmount (address tokenAddress) public view returns (uint) {
         int arrayIndex = int(tokenMap[tokenAddress]) - 1;
         if (arrayIndex == -1) {
@@ -114,9 +114,9 @@ contract OBdefiStaking {
         }
     }
 
-    /// @notice indicate the calculated reward amount for a given token
+    /// @notice calculate reward amount for a given token
     /// @param tokenAddress address of the staked token
-    /// @return an uint
+    /// @return uint
     function getTokenReward (address tokenAddress) public view returns (uint) {
         int arrayIndex = int(tokenMap[tokenAddress]) - 1;
         if (arrayIndex == -1) {
@@ -127,6 +127,7 @@ contract OBdefiStaking {
         }
     }
     
+    // voir si besoin de cette fct ...  pas de rinkeby 
     /// @notice factory to give chainlink data feed address for Rinkeby testnet
     /// @param sourceTokenSymbol symbol of the token
     /// @return an address
@@ -145,19 +146,19 @@ contract OBdefiStaking {
         }
     }
     
-    /// @notice return the corresponding Rinkeby chainlink price for a token
-    /// @dev note: for test purpose it also returns 10 for AT1 and 20 for AT2 tokens
+    /// @notice returns the corresponding Rinkeby chainlink price for a token
+    /// @dev note: for test purpose it also returns 30 for "OBS" - 40 for "MCTO" 
     /// @param tokenAddress address of the staked token
-    /// @return an uint
+    /// @return uint
     function getTokenPrice (address tokenAddress) public view returns (int) {
         try ERC20(tokenAddress).symbol() returns (string memory tokenSymbol) {
             address datafeedAddress = getDataFeedAddressToETH(tokenSymbol);
             if (datafeedAddress == address(0)) {
-                if (keccak256(bytes(tokenSymbol)) == keccak256(bytes("AT1"))) {
-                    return 10;
+                if (keccak256(bytes(tokenSymbol)) == keccak256(bytes("OBS"))) {
+                    return 30;
                 }
-                else if (keccak256(bytes(tokenSymbol)) == keccak256(bytes("AT2"))) {
-                    return 20;
+                else if (keccak256(bytes(tokenSymbol)) == keccak256(bytes("MCTO"))) {
+                    return 40;
                 }
                 else {
                     return 0;
@@ -165,7 +166,7 @@ contract OBdefiStaking {
             }
             else {
 
-                //try priceConsumerV3.getLatestPrice(tokenAddress) returns (int price) {
+                // calcul externe du dernier prix - 
                 try priceLatest.getLatestPrice(tokenAddress) returns (int price) {
                     return price;
                 } catch {
@@ -178,8 +179,8 @@ contract OBdefiStaking {
         }
     }
     
-    /// @notice return the total stake reward price in ETH
-    /// @return an uint
+    /// @notice returns the total stake reward price in ETH
+    /// @return uint
     function getAllTokensRewardsInETH () public view returns (uint) {
         uint totalRewardsInETH;
         for (uint tokenCounter=0; tokenCounter<tokens.length; tokenCounter++) {
