@@ -47,7 +47,7 @@ All contracts have been migrated to Solidity 0.8.10
 | UniswapV2Pair     | MamieCryptoV2Pair     |
 | UniswapV2Router02 | MamieCryptoV2Router02 |
 
-### **Sushi masterchef**    :sushi: 
+### **Sushi Masterchef**    :sushi: 
 
 Localted in folder `contracts/MasterChef`, you will find `Masterchef.sol` and `MCTO.sol`
 Forked from: [*`MasterChef.sol`*](https://github.com/sushiswap/sushiswap/blob/canary/contracts/MasterChef.sol)
@@ -62,6 +62,6 @@ Contract is located in `contracts/Staking` folder and called `MCTOBar.sol`
 
 In MCTO bar you can deposit your MCTO tokens and receive stkMCTO. It will accrued more MCTO over time.
 
-ENJOY SOME SUSHIs :sushi: and Smile :joy:
+Enjoy some SUSHIs :sushi: and Smile :joy:
 
 
